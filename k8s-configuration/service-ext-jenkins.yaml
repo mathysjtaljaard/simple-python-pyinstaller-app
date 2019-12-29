@@ -1,0 +1,17 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name:  jenkins
+spec:
+  selector:
+    app:  jenkins
+    type: ci-server
+    resource: build
+  type:  NodePort
+  ports:
+  - name:  svc-jenkins-port
+    port:  8080
+    targetPort:  jenkins-app
+  - name: svc-jenkins-buildexe
+    port: 50000
+    targetPort: jenkinsbuildexe

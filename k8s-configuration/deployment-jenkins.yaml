@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:  jenkins
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 1
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: jenkins
+  template:
+    metadata:
+      labels:
+        app: jenkins
+        type: ci-server
+        resource: build
+    spec:
+      securityContext:
+        fsGroup: 1000 
+        runAsUser: 0
+      containers:
+      - name:  jenkins 
+        image:  jenkinsci/blueocean
+        imagePullPolicy: Always
+        resources:
+          requests:
+            cpu: ".25"
+            memory: ".5Gi"
+          limits:
+            cpu: "1"
+            memory: "1Gi"    
+        # env:
+        # - name: DOCKER_HOST
+        #   value: tcp://localhost:2376
+        # - name: DOCKER_CERT_PATH
+        #   value: /certs/client
+        # - name: DOCKER_TLS_VERIFY
+        #   value: "1"
+        ports:
+        - containerPort: 8080
+          name:  jenkins-app
+        - containerPort: 50000
+          name: jenkinsbuildexe
+        volumeMounts:
+          - name: k8s-jenkins-app
+            mountPath: /var/jenkins_home
+          # - name: k8s-jenkins-dind-ca
+          #   mountPath: /certs/ca
+          # - name: k8s-jenkins-dind-client
+          #   mountPath: /certs/client:ro
+          - name: bind-docker-sock
+            mountPath: /var/run/docker.sock
+#https://developer.ibm.com/tutorials/configure-a-cicd-pipeline-with-jenkins-on-kubernetes/
+#http://jpetazzo.github.io/2015/09/03/do-not-use-docker-in-docker-for-ci/
+      # - name: jenkins-dind
+      #   image: docker:dind
+      #   env:
+      #     - name: DOCKER_TLS_CERTDIR
+      #       value: /certs
+      #   resources:
+      #     limits:
+      #       memory: "128Mi"
+      #       cpu: "500m"
+      #   securityContext: 
+      #     privileged: true
+      #   ports:
+      #   - containerPort: 2376
+      #     name: dind-port
+      #   volumeMounts:
+      #   - name: k8s-jenkins-dind-ca
+      #     mountPath: /certs/ca
+      #   - name: k8s-jenkins-dind-client
+      #     mountPath: /certs/client
+      volumes:
+        # - name: k8s-jenkins-dind-ca
+        #   emptyDir: {}
+        # - name: k8s-jenkins-dind-client
+        #   emptyDir: {}
+        - name: bind-docker-sock
+          hostPath:
+              path: /var/run/docker.sock
+        - name: k8s-jenkins-app
+          hostPath:
+            path: /mnt/hdd4tb/jenkins
+      restartPolicy: Always
+      
